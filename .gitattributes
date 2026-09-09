@@ -1,0 +1,15 @@
+# 文本一律 LF。覆盖 Windows 上 Git 默认的 core.autocrlf=true,
+# 避免工作区已是 LF 时 status 报修改、diff 却是空的。
+* text=auto eol=lf
+
+# Cargo.lock 由 cargo 生成,冲突时任取一方后重新 `cargo update --workspace` 即可,不做逐行合并
+Cargo.lock merge=binary
+
+# Trellis: append-only developer journals should merge cleanly across
+# parallel sessions/worktrees — each session only appends a new block, so
+# there is nothing to actually conflict on.
+#
+# Do NOT add a rule for workspace/*/index.md here — it is fully regenerated
+# every session, so a real conflict there is expected and safe to resolve by
+# picking either side (task state lives in task.json, not index.md).
+.trellis/workspace/*/journal-*.md merge=union

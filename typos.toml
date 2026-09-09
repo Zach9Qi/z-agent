@@ -1,0 +1,22 @@
+# crate-ci/typos 拼写检查配置:CI 的 typos job 与 `cargo xtask ci`(本机装了 typos-cli 时)以此为准。
+# 误报处理:确认是专有名词 / 缩写后加到下方 extend-words / extend-identifiers,不要整文件排除。
+# 文档:https://github.com/crate-ci/typos/blob/master/docs/reference.md
+
+[files]
+# 锁文件与构建产物不检查;中文文本 typos 天然忽略,不用排除
+extend-exclude = ["Cargo.lock", "target/"]
+
+[default]
+# 允许形如 v1.2.3 / abc123 的十六进制串与短 hash 不被当作单词
+extend-ignore-re = [
+  "\b[0-9a-f]{7,40}\b",
+]
+
+[default.extend-words]
+# 形如:teh = "the"(把左边当作右边的拼写错误)或 ser = "ser"(声明为正确拼写)
+# serde 生态里的常见缩写
+ser = "ser"
+de = "de"
+
+[default.extend-identifiers]
+# 标识符级白名单,如第三方 API 里的固有拼写

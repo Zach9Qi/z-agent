@@ -1,0 +1,159 @@
+# main 分支质量门禁:push 到 main 与目标为 main 的 PR 触发。
+# 校验命令与 `cargo xtask ci` 一致:typos / fmt / clippy / test / doc,另加 MSRV 编译、cargo-deny 依赖审计与 crates.io 打包演练。
+# CI 一律加 --locked:Cargo.lock 与 Cargo.toml 不一致直接失败(本地 xtask ci 不加,允许边改依赖边跑);
+# 否则过时的锁文件在这里会被 cargo 悄悄改写而通过,到 release.yml 的 --locked 构建时才炸。
+# 第三方 action 固定大版本,且选 Node 24 运行时的版本(actions/checkout@v4 仍是 Node 20,托管 runner 于 2026-09-23 移除 Node 20)。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一分支的新提交自动取消仍在跑的旧任务,不浪费 runner 时间
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# 门禁只读代码,不写任何仓库内容
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # 不生成增量编译缓存:CI 每次都是干净构建,增量只会拖慢速度、占用缓存空间
+  CARGO_INCREMENTAL: 0
+  # 回溯太长的 panic 信息在 CI 日志里没有价值
+  RUST_BACKTRACE: short
+
+jobs:
+  # 拼写检查:源码、注释、文档、配置全部覆盖;规则见 typos.toml。版本钉到具体 tag,由 dependabot 升级
+  typos:
+    name: 拼写检查(typos)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: typos
+        uses: crate-ci/typos@v1.50.1
+
+  # 格式与文档只需跑一次,不依赖平台
+  lint:
+    name: 格式 / 文档(fmt / rustdoc)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Rust 工具链(stable,含 rustfmt)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: 缓存 cargo 产物
+        uses: Swatinem/rust-cache@v2
+
+      - name: 格式检查(cargo fmt)
+        run: cargo fmt --all --check
+
+      - name: 文档构建(rustdoc 警告视为错误)
+        run: cargo doc --workspace --no-deps --document-private-items --locked
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  # clippy 与测试三平台并行:平台相关代码(路径、进程、控制台)最容易在这里暴露问题
+  test:
+    name: Clippy / 测试(${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # 一个平台失败其他继续跑完,方便一次看到全部问题
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest, macos-latest]
+    defaults:
+      run:
+        # 统一用 bash,避免 Windows 默认 pwsh 与 bash 在参数解析上的差异
+        shell: bash
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Rust 工具链(stable,含 clippy)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: 缓存 cargo 产物
+        uses: Swatinem/rust-cache@v2
+
+      - name: Clippy(警告视为错误)
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: 单元测试与集成测试(cargo test)
+        run: cargo test --workspace --locked
+
+  # MSRV 验证:用 Cargo.toml 声明的 rust-version 编译一遍,保证「最低支持版本」不是一句空话
+  # (例如新语法 let-chain 自 1.88 才稳定,stable 上能过、声明的 MSRV 上却编不过)
+  msrv:
+    name: MSRV 编译检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      # 从根 Cargo.toml 读 rust-version,不在 workflow 里重复写一份
+      - name: 读取 rust-version
+        id: msrv
+        run: |
+          msrv=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "声明的 MSRV: $msrv"
+          echo "version=$msrv" >> "$GITHUB_OUTPUT"
+
+      # 动态指定工具链版本时,dtolnay/rust-toolchain 要求用 @master 配合 toolchain 输入
+      - name: 安装 MSRV 工具链
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+
+      - name: 缓存 cargo 产物
+        uses: Swatinem/rust-cache@v2
+
+      # 只验证能编译(含测试代码),不跑测试、不跑 clippy:旧版 clippy 的规则集与 stable 不同,会产生无关噪音
+      - name: cargo check(MSRV)
+        run: cargo check --workspace --all-targets --locked
+
+  # crates.io 打包演练:校验 description / readme / include 等发布元数据,并在隔离目录里用打包后的源码重新编译,
+  # 把「本地能编、发布后编不过」的问题(漏 include 文件、依赖没写 version)拦在 PR 阶段。
+  # 没有可发布成员时 cargo 只警告不失败,模板初始状态可直接通过
+  package:
+    name: crates.io 打包演练(publish --dry-run)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Rust 工具链(stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 cargo 产物
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo publish --workspace --dry-run
+        run: cargo publish --workspace --dry-run --locked
+
+  # 依赖审计:安全通告 / 许可证 / 重复依赖 / 来源白名单,规则见 deny.toml
+  deny:
+    name: 依赖审计(cargo-deny)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: cargo-deny 检查
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          # 有新通告时立刻失败,提醒升级;不要用 continue-on-error 把它变成摆设
+          arguments: --all-features

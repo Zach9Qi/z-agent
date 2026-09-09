@@ -1,0 +1,57 @@
+# cargo-deny 配置:依赖审计规则,CI 的 deny job 以此为准。
+# 本地安装后可用 `cargo deny check` 复现;字段说明见 https://embarkstudios.github.io/cargo-deny/checks/index.html
+
+[graph]
+# 只审计发布产物会用到的目标,减少平台专属依赖带来的噪音
+targets = [
+  "x86_64-pc-windows-msvc",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+]
+all-features = true
+
+[advisories]
+# RustSec 通告数据库;有未修复的漏洞 / 已停止维护(unmaintained)/ 已撤回(yanked)版本时失败
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+# 确认可接受的通告写在这里并注明原因,例如:
+# ignore = [{ id = "RUSTSEC-0000-0000", reason = "仅影响未启用的 feature" }]
+ignore = []
+
+[licenses]
+# 白名单之外的许可证一律失败;新增依赖带来新许可证时,评估后在此显式放行
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+  "Zlib",
+]
+# 许可证表达式解析的置信度阈值(0.0 - 1.0),默认 0.8
+confidence-threshold = 0.8
+# 白名单里暂时没有依赖用到的许可证不报 warning:白名单是策略声明,不必与当前依赖树一一对应
+unused-allowed-license = "allow"
+
+[bans]
+# 同一 crate 多个版本:warn 而非 deny,避免上游依赖树暂时不一致时卡住 CI;定期用 `cargo tree -d` 清理
+multiple-versions = "warn"
+# 禁止 `*` 版本;publish = false 的成员对工作区内 crate 的 path 依赖可以不写版本号(cargo-deny 视其为通配)
+wildcards = "deny"
+allow-wildcard-paths = true
+highlight = "all"
+# 明确禁用的 crate 写在这里并注明替代方案,例如:
+# deny = [{ crate = "openssl", reason = "统一用 rustls" }]
+deny = []
+
+[sources]
+# 只允许 crates.io;git 依赖需在下方 allow-git 显式登记
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

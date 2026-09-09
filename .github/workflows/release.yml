@@ -1,0 +1,255 @@
+# 推送 v* tag 后自动发布:
+#   verify(版本 / 更新日志 / 测试)→ build(可选:二进制五目标打包)→ publish-crates(发布到 crates.io)→ publish(GitHub Release)
+# 本地由 `cargo xtask release <版本>` 负责同步版本号、切更新日志、commit、打 tag 并 push(见 xtask/src/release.rs 与 README)。
+# 顺序刻意把 crates.io 放在二进制构建之后:发布到 crates.io 不可撤销(只能 yank),所以先让所有可能失败的编译跑完。
+# 任一环节失败则后续不执行;修好后删 tag 重推即可(已发到 crates.io 的版本无法重发,需要 bump 一个新版本)。
+# 第三方 action 固定大版本,且一律选 Node 24 运行时的版本(actions/* 的 v4 系列仍是 Node 20,
+# GitHub 托管 runner 于 2026-09-23 移除 Node 20):checkout@v6 / upload-artifact@v6 / download-artifact@v7 / action-gh-release@v3
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# 顶层只读,仅 publish job 提升为 contents: write(创建 Release、上传附件);全程只用 GITHUB_TOKEN
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  # 【新项目必改】要打包成安装包分发的二进制 crate(可选):PKG_NAME 是 cargo 包名([package] name),BIN_NAME 是可执行文件名([[bin]] name)。
+  # 用 `cargo xtask new <名字> --bin` 生成的 crate 两者相同。纯库项目保持为空即可:跳过二进制打包,只发 crates.io + GitHub Release
+  BIN_NAME: ""
+  PKG_NAME: ""
+
+jobs:
+  verify:
+    name: 校验版本号、更新日志与测试
+    runs-on: ubuntu-latest
+    outputs:
+      # 二进制打包是否启用(PKG_NAME 与 BIN_NAME 都填了);job 级 if 不能直接读 env,所以经 outputs 传递
+      has_bin: ${{ steps.config.outputs.has_bin }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 读取发布配置
+        id: config
+        run: |
+          if [[ -n "$PKG_NAME" && -n "$BIN_NAME" ]]; then
+            echo "has_bin=true" >> "$GITHUB_OUTPUT"
+            echo "二进制打包:包 $PKG_NAME,可执行文件 $BIN_NAME"
+          elif [[ -z "$PKG_NAME" && -z "$BIN_NAME" ]]; then
+            echo "has_bin=false" >> "$GITHUB_OUTPUT"
+            echo "PKG_NAME / BIN_NAME 为空:跳过二进制打包,只发布 crates.io 与 GitHub Release"
+          else
+            echo "::error::release.yml 顶部的 PKG_NAME 与 BIN_NAME 要么都填、要么都留空"
+            exit 1
+          fi
+
+      - name: 安装 Rust 工具链(stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 cargo 产物
+        uses: Swatinem/rust-cache@v2
+
+      # tag 版本(去掉 v 前缀)必须与 Cargo.toml [workspace.package].version、全部成员、内部依赖 version 一致,
+      # 且 CHANGELOG.md 里有该版本段落;不一致由 xtask 输出中文原因并以非零退出,后续构建不会开始
+      - name: 校验 tag 与工作区版本、更新日志一致
+        run: cargo xtask version check "$GITHUB_REF_NAME"
+
+      # Release 说明取自 CHANGELOG.md 对应段落,经 artifact 传给 publish job(那边不再编译 xtask)
+      - name: 生成 Release 说明
+        run: cargo xtask changelog notes "$GITHUB_REF_NAME" > release-notes.md
+
+      - name: 上传 Release 说明
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release-notes.md
+          if-no-files-found: error
+
+      # 测试在这里跑一次即可,不必每个目标重复;fmt / clippy 由 ci.yml 在 main 上保障,发布阶段不重复以节省时间
+      - name: 单元测试与集成测试(cargo test)
+        run: cargo test --workspace --locked
+
+  build:
+    name: 打包(${{ matrix.target }})
+    needs: verify
+    # 只有配置了二进制 crate 才跑;纯库项目整个矩阵跳过
+    if: needs.verify.outputs.has_bin == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # 一个目标失败其他继续跑完,方便一次看到全部问题;publish 因 needs 仍不会执行
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          # macOS Intel:在 arm64 runner 上交叉编译,rustup 加 target 即可
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          # Linux:选 24.04 而非 22.04:22.04 镜像自 2026-09-17 起弃用,代价是 glibc 基线抬高
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-24.04
+          # Linux ARM64:交叉编译,需要 aarch64 的 gcc 作为链接器(链接器名在 .cargo/config.toml 的 [target.*] 段)
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04
+            cross-packages: gcc-aarch64-linux-gnu
+    defaults:
+      run:
+        # 统一用 bash(Windows runner 自带 Git Bash),打包脚本只写一份
+        shell: bash
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Rust 工具链(stable,含目标平台)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: 安装交叉编译工具(仅需要的目标)
+        if: matrix.cross-packages != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.cross-packages }}
+
+      - name: 缓存 cargo 产物
+        uses: Swatinem/rust-cache@v2
+        with:
+          # 同一 runner 上多个 target 共用 job id,靠 target 区分缓存
+          key: ${{ matrix.target }}
+
+      # --locked:Cargo.lock 与 Cargo.toml 不一致时直接失败,保证发布产物的依赖版本与仓库记录完全一致
+      - name: 编译发布版
+        run: cargo build --release --locked --package "$PKG_NAME" --target "${{ matrix.target }}"
+
+      # 产物命名:<bin>-<tag>-<target>.{zip|tar.gz},附带 LICENSE 与 README;同时生成 .sha256 校验文件。
+      # Windows 用 7z(runner 自带,没有则退回 PowerShell Compress-Archive)打 zip,其余平台 tar.gz;sha256 工具在 macOS 是 shasum
+      - name: 打包与校验和
+        id: package
+        run: |
+          set -euo pipefail
+          target="${{ matrix.target }}"
+          base="${BIN_NAME}-${GITHUB_REF_NAME}-${target}"
+          bin_dir="target/${target}/release"
+          staging="dist/${base}"
+          mkdir -p "$staging"
+          cp LICENSE README.md "$staging/"
+
+          if [[ "$target" == *windows* ]]; then
+            cp "${bin_dir}/${BIN_NAME}.exe" "$staging/"
+            asset="${base}.zip"
+            if command -v 7z >/dev/null; then
+              (cd dist && 7z a -bso0 "$asset" "$base")
+            else
+              powershell -NoProfile -Command "Compress-Archive -Path 'dist/${base}' -DestinationPath 'dist/${asset}'"
+            fi
+          else
+            cp "${bin_dir}/${BIN_NAME}" "$staging/"
+            asset="${base}.tar.gz"
+            tar -C dist -czf "dist/${asset}" "$base"
+          fi
+
+          cd dist
+          if command -v sha256sum >/dev/null; then
+            sha256sum "$asset" > "${asset}.sha256"
+          else
+            shasum -a 256 "$asset" > "${asset}.sha256"
+          fi
+          cat "${asset}.sha256"
+          echo "asset=${asset}" >> "$GITHUB_OUTPUT"
+
+      - name: 上传产物 artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.target }}
+          if-no-files-found: error
+          path: |
+            dist/${{ steps.package.outputs.asset }}
+            dist/${{ steps.package.outputs.asset }}.sha256
+
+  # 发布全部可发布成员到 crates.io。cargo publish --workspace(cargo >= 1.90)会按依赖顺序逐个上传并等待索引就绪;
+  # publish = false 的成员(xtask、二进制 crate)自动跳过;没有可发布成员时只警告,不失败。
+  #
+  # 认证用 crates.io 的 Trusted Publishing(OIDC,短期令牌,不用在仓库里存长期 API token):
+  #   1. 每个 crate 的第一个版本必须先在本机 `cargo publish -p <名字>` 手动发布一次(crates.io 上得先有这个 crate);
+  #   2. 到 crates.io → 该 crate → Settings → Trusted Publishing,添加 GitHub:仓库 owner / name、workflow 文件名 release.yml、
+  #      Environment 留空(或填 release 并在下方 job 加 `environment: release`);
+  #   3. 之后推 tag 即自动发布。
+  # 若不想用 Trusted Publishing:把下方 auth 步骤删掉,并把 CARGO_REGISTRY_TOKEN 改为 ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  publish-crates:
+    name: 发布到 crates.io
+    # build 可能被跳过(纯库项目),所以用 always() 放行,再显式要求 verify 成功、build 成功或跳过
+    needs: [verify, build]
+    if: always() && needs.verify.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Trusted Publishing 需要向 crates.io 出示 GitHub 的 OIDC 身份令牌
+      id-token: write
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Rust 工具链(stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 cargo 产物
+        uses: Swatinem/rust-cache@v2
+
+      - name: 获取 crates.io 短期令牌(Trusted Publishing)
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: cargo publish --workspace
+        run: cargo publish --workspace --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+  publish:
+    name: 创建 GitHub Release
+    needs: [verify, build, publish-crates]
+    if: always() && needs.verify.result == 'success' && needs.publish-crates.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 下载 Release 说明
+        uses: actions/download-artifact@v8
+        with:
+          name: release-notes
+
+      - name: 下载全部二进制产物(若有)
+        if: needs.build.result == 'success'
+        uses: actions/download-artifact@v8
+        with:
+          path: release
+          pattern: release-*
+          # 多个 artifact 拉平到同一目录;文件名自带 target 后缀,不会互相覆盖
+          merge-multiple: true
+
+      # 把各目标的 .sha256 汇总成一个 SHA256SUMS 文件,用户一次下载即可校验全部产物
+      - name: 汇总校验和
+        if: needs.build.result == 'success'
+        run: |
+          set -euo pipefail
+          cd release
+          cat -- *.sha256 > SHA256SUMS
+          rm -- *.sha256
+          echo "发布附件:"
+          ls -l
+
+      # 纯库项目没有附件:files 留空,只创建带说明的 Release;有二进制时任何一个 glob 没匹配到文件就失败
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: release-notes.md
+          files: ${{ needs.build.result == 'success' && 'release/*' || '' }}
+          fail_on_unmatched_files: ${{ needs.build.result == 'success' }}
+          # tag 含 `-`(如 v0.2.0-beta.1)标记为预发布,正式版不带 `-`
+          prerelease: ${{ contains(github.ref_name, '-') }}

@@ -1,0 +1,5 @@
+# 与 CI / 发版 workflow 的 dtolnay/rust-toolchain@stable 对齐:
+# 进入本仓库时 rustup 自动切到 stable,并带上门禁用的 rustfmt / clippy。
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]

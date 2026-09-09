@@ -1,0 +1,18 @@
+# 依赖自动升级:每周一次,cargo 依赖与 GitHub Actions 版本分开成组,减少 PR 数量
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      cargo-dependencies:
+        patterns: ["*"]
+  # 含 crate-ci/typos 这类钉死到具体版本的 action
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]

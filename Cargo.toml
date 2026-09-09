@@ -1,0 +1,71 @@
+# 工作区根清单:所有 crate 的版本、edition、license、依赖版本与 lint 规则都在这里统一声明,
+# 成员 crate 用 `xxx.workspace = true` 继承,避免多处漂移。
+[workspace]
+resolver = "3"
+# 业务 crate 一律放在 crates/ 下,用 `cargo xtask new <名字> [--bin]` 生成;模板初始状态 crates/ 为空
+members = ["crates/*", "xtask"]
+# 想让根目录的 cargo build / test 默认跳过 xtask,可在有了业务 crate 之后加上:
+# default-members = ["crates/*"]
+# (crates/ 为空时不能加,glob 匹配不到成员会让 cargo 直接报错)
+
+[workspace.package]
+# 【新项目必改】版本号只在这里维护一处,`cargo xtask release` 负责递增并刷新 Cargo.lock
+version = "0.1.0"
+# 【新项目必改】改成你的名字或邮箱
+authors = ["Zach9Qi"]
+# 【新项目必改】仓库地址,会写进每个 crate 的元数据
+repository = "https://github.com/Zach9Qi/rust-monorepo-starter"
+license = "MIT"
+edition = "2024"
+# edition 2024 自 1.85 起稳定;低于此版本 cargo 会直接拒绝编译
+rust-version = "1.85"
+
+# 工作区级依赖版本表:成员 crate 只写 `serde.workspace = true`,升级依赖只改这里。
+# 表里预置的是常用基础库,未被任何成员引用的条目不会进入 Cargo.lock,用不上可以删。
+[workspace.dependencies]
+# 内部 crate 也在这里登记路径,成员之间互相引用不用重复写 path;`cargo xtask new` 会自动追加到本行下方
+
+# 错误处理:库 crate 用 thiserror 定义强类型错误,二进制 crate 用 anyhow 汇总
+thiserror = "2.0.20"
+anyhow = "1.0.102"
+# 序列化
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+# 命令行解析
+clap = { version = "4.5.60", features = ["derive"] }
+# 日志门面 + 订阅器:业务代码只用 tracing 宏,禁止 println! 调试
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+# 二进制集成测试(以子进程方式运行可执行文件,校验退出码与输出)
+assert_cmd = "2.1.2"
+predicates = "3.1.3"
+
+# 工作区级 lint:成员 crate 用 `[lints] workspace = true` 继承。CI 以 `-D warnings` 运行 clippy,
+# 所以这里的 warn 在门禁中等同 deny;本地开发时仍是 warning,不打断编译。
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+# pedantic 全开作为基线,个别噪音大的规则在下方单独放行;priority = -1 保证下方单条规则能覆盖分组
+pedantic = { level = "warn", priority = -1 }
+# 模块名与类型名重复(如 error::Error)在小型 crate 里很常见,不视为问题
+module_name_repetitions = "allow"
+# 只在 panic 会导致数据损坏的场景才要求写 Panics 文档;库 crate 不应 panic,统一由 unwrap_used 约束
+missing_panics_doc = "allow"
+# 库代码禁止 unwrap / expect,错误必须显式传播;测试模块顶部用 `#[allow(clippy::unwrap_used, clippy::expect_used)]` 放开
+unwrap_used = "warn"
+expect_used = "warn"
+# 禁止用 print 系列宏调试;CLI 的正式输出集中在 main 里单独放行
+print_stdout = "warn"
+print_stderr = "warn"
+dbg_macro = "warn"
+todo = "warn"
+
+# 发布构建:LTO + 单 codegen unit 缩小体积、提升运行性能;panic 直接 abort 去掉展开表
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"

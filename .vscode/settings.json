@@ -1,0 +1,14 @@
+{
+  "files.eol": "\n",
+  "diffEditor.renderSideBySide": false,
+  "editor.formatOnSave": true,
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml"
+  },
+  // 保存时用 clippy 而不是 check,与 CI 门禁看到同一批诊断;--all-targets 覆盖测试代码
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.check.extraArgs": ["--all-targets"]
+}

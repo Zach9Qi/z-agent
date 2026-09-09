@@ -1,0 +1,9 @@
+# 只用 stable 通道可用的选项;edition 由 cargo fmt 从 Cargo.toml 读取,不在此重复。
+# 与 .editorconfig / .gitattributes 一致:LF 换行
+newline_style = "Unix"
+# 与 .editorconfig 的 4 空格缩进一致(rustfmt 默认值,显式写出避免歧义)
+tab_spaces = 4
+max_width = 100
+# 多行 use 统一排序合并,减少 import 区的无意义 diff
+reorder_imports = true
+reorder_modules = true

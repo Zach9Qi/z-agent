@@ -1,0 +1,30 @@
+{
+  "id": "00-bootstrap-guidelines",
+  "name": "00-bootstrap-guidelines",
+  "title": "Bootstrap Guidelines",
+  "description": "Fill in project development guidelines for AI agents",
+  "status": "completed",
+  "dev_type": "docs",
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "template",
+  "assignee": "template",
+  "createdAt": "2026-09-09",
+  "completedAt": "2026-09-09",
+  "branch": "main",
+  "base_branch": null,
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    ".trellis/spec/",
+    "AGENTS.md",
+    ".trellis/config.yaml"
+  ],
+  "notes": "First-time setup task created by trellis init (backend project). Completed: spec tree rebuilt around workspace/rust + workspace/process + crates/{library,binary} + xtask/automation, grounded in xtask source and industry Rust style research; AGENTS.md slimmed to entry point.",
+  "meta": {}
+}

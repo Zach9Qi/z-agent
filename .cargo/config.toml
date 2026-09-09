@@ -1,0 +1,9 @@
+# cargo 别名:`cargo xtask <子命令>` 运行工作区内的 xtask 工具 crate(发版、版本校验、本地门禁)。
+# xtask 不在 default-members 中,只有显式调用才会编译。
+[alias]
+xtask = "run --package xtask --"
+
+# Linux ARM64 交叉编译用的链接器(release.yml 在 ubuntu 上安装 gcc-aarch64-linux-gnu)。
+# 只在构建该 target 时生效,不影响本机构建。
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
