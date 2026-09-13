@@ -10,7 +10,7 @@
 本目录的规则来自三处,冲突时按顺序取舍:
 
 1. **本仓库已强制执行的约束**:根 `Cargo.toml` `[workspace.lints]`(`clippy::pedantic` 基线、`unsafe_code = "forbid"`、`missing_docs`、`unwrap_used` / `expect_used`、禁 print)、`rustfmt.toml`、`deny.toml`、`typos.toml`、`cargo xtask ci` / `.github/workflows/ci.yml`。`AGENTS.md` 只是入口路由,不含规则。
-2. **`cargo xtask new` 生成的模板与 `xtask/src/*.rs` 的既有写法**——这是仓库里唯一的「活代码」,spec 中的范例都指向它们。
+2. **`cargo xtask new` 生成的模板、`xtask/src/*.rs` 与已落地库的既有写法**——通用规范保留模板实证；首个业务库 `crates/z-ai/` 的账号、serde 与事件契约见 `../../crates/library/z-ai-core-contracts.md`。
 3. **业内共识**:Rust API Guidelines(`C-XXX` 条目号)、rust-analyzer 《Style》、tokio / tracing / bevy 的 lint 基线、BurntSushi 系 crate 与 `clap` 的错误 / 文档结构、axum 的 doctest 与 CHANGELOG 约定。只吸收与前两条不冲突且能落地到本仓库的部分;明确**不采用**的:rust-analyzer 不用 Conventional Commits(本仓库用)、英文注释(本仓库中文)、`FxHashMap` / `AbsPath` 等 rust-analyzer 内部类型。
 
 ---

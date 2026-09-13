@@ -1,0 +1,35 @@
+[package]
+name = "z-ai"
+# crates.io 搜索与页面元数据
+description = "AI 聊天数据与显式多账号认证的纯核心类型库"
+keywords = ["ai", "chat", "models", "credentials"]
+categories = ["data-structures"]
+readme = "README.md"
+documentation = "https://docs.rs/z-ai"
+version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# 发布源码及用户文档、上游许可归属，不上传测试夹具
+include = ["src/**/*", "Cargo.toml", "README.md"]
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+thiserror.workspace = true
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true
+
+# docs.rs 构建时开启全部 feature，让每个可选 API 都出现在文档里
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

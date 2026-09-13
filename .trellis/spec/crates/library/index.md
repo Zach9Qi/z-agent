@@ -37,8 +37,11 @@
 
 ## Guidelines Index
 
+现有业务库 `crates/z-ai/` 提供纯核心聊天数据与显式多账号；修改该库时先读其可执行契约。
+
 | 文档 | 内容 | 何时读 |
 |---|---|---|
+| [z-ai-core-contracts.md](./z-ai-core-contracts.md) | 账号选择/CAS/ABA、秘密保护、serde与事件数据契约、错误矩阵及测试 | 修改 `crates/z-ai/` |
 | [crate-anatomy.md](./crate-anatomy.md) | 目录骨架、`Cargo.toml` 元数据、分层禁令、TODO 占位清单、semver 与弃用流程、内部依赖登记、发布约束 | 新建库 crate、改公开 API、发布前 |
 | [../../workspace/rust/module-layout.md](../../workspace/rust/module-layout.md) | 文件内顺序、`use` 三组、可见性、`#[allow]` 用法 | 每次新建 / 大改文件 |
 | [../../workspace/rust/naming-and-api-design.md](../../workspace/rust/naming-and-api-design.md) | 命名、参数类型、构造、必须实现的 trait、`#[non_exhaustive]` / newtype | 设计公开函数与类型 |

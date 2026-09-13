@@ -24,13 +24,15 @@ rust-version = "1.85"
 # 表里预置的是常用基础库,未被任何成员引用的条目不会进入 Cargo.lock,用不上可以删。
 [workspace.dependencies]
 # 内部 crate 也在这里登记路径,成员之间互相引用不用重复写 path;`cargo xtask new` 会自动追加到本行下方
+z-ai = { path = "crates/z-ai", version = "0.1.0" }
 
 # 错误处理:库 crate 用 thiserror 定义强类型错误,二进制 crate 用 anyhow 汇总
 thiserror = "2.0.20"
 anyhow = "1.0.102"
 # 序列化
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
+# JSON 工具与往返测试：浮点解析启用精确舍入，避免有限数往返出现尾数偏差
+serde_json = { version = "1.0.149", features = ["float_roundtrip"] }
 # 命令行解析
 clap = { version = "4.5.60", features = ["derive"] }
 # 日志门面 + 订阅器:业务代码只用 tracing 宏,禁止 println! 调试

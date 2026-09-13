@@ -13,6 +13,8 @@
 
 ### Added
 
+- 新增 `z-ai` 纯核心库，提供与 `pi-ai` 语义对齐的聊天、模型、工具和事件数据，以及可选 `serde` 支持；不包含网络客户端或 OAuth 登录流程
+- 同一 provider 可管理多个独立 API Key / OAuth 账号配置，显式选择账号并通过版本条件更新保护凭据隔离，敏感配置的调试输出默认脱敏
 - 基于 rust-monorepo-starter 模板初始化项目
 
 [Unreleased]: https://github.com/Zach9Qi/rust-monorepo-starter/commits/main

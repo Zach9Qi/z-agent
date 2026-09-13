@@ -1,0 +1,13 @@
+{"file":".trellis/spec/workspace/rust/index.md","reason":"Rust硬约束、MSRV与workspace规则"}
+{"file":".trellis/spec/crates/library/index.md","reason":"纯库边界与公开API验收"}
+{"file":".trellis/spec/crates/library/crate-anatomy.md","reason":"生成器、无IO、打包及元数据"}
+{"file":".trellis/spec/workspace/rust/module-layout.md","reason":"模块顺序、可见性与lint约束"}
+{"file":".trellis/spec/workspace/rust/naming-and-api-design.md","reason":"newtype、私有字段、脱敏Debug、serde与构造校验"}
+{"file":".trellis/spec/workspace/rust/error-handling.md","reason":"唯一Error、边界校验与中文错误"}
+{"file":".trellis/spec/workspace/rust/documentation.md","reason":"中文公开文档及可运行示例"}
+{"file":".trellis/spec/workspace/rust/testing.md","reason":"离线确定性测试与公共API集成测试"}
+{"file":".trellis/spec/workspace/rust/dependencies-and-changelog.md","reason":"可选serde、依赖最小化、CHANGELOG与许可"}
+{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/core-scope.md","reason":"首版T/E/X字段范围及对应上游锚点"}
+{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/upstream-core.md","reason":"固定语义基线、事件所有权与usage语义"}
+{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/upstream-auth.md","reason":"认证特例与未来宿主风险，不扩大核心承诺"}
+{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/planning-review.md","reason":"CAS/ABA、快照/刷新边界与脱敏审查结论"}
