@@ -7,7 +7,7 @@
 {"file":".trellis/spec/workspace/rust/documentation.md","reason":"中文公开文档及可运行示例"}
 {"file":".trellis/spec/workspace/rust/testing.md","reason":"离线确定性测试与公共API集成测试"}
 {"file":".trellis/spec/workspace/rust/dependencies-and-changelog.md","reason":"可选serde、依赖最小化、CHANGELOG与许可"}
-{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/core-scope.md","reason":"首版T/E/X字段范围及对应上游锚点"}
-{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/upstream-core.md","reason":"固定语义基线、事件所有权与usage语义"}
-{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/upstream-auth.md","reason":"认证特例与未来宿主风险，不扩大核心承诺"}
-{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/planning-review.md","reason":"CAS/ABA、快照/刷新边界与脱敏审查结论"}
+{"file":".trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/core-scope.md","reason":"首版T/E/X字段范围及对应上游锚点"}
+{"file":".trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/upstream-core.md","reason":"固定语义基线、事件所有权与usage语义"}
+{"file":".trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/upstream-auth.md","reason":"认证特例与未来宿主风险，不扩大核心承诺"}
+{"file":".trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/planning-review.md","reason":"CAS/ABA、快照/刷新边界与脱敏审查结论"}

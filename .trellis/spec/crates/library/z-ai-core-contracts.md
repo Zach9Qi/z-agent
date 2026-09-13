@@ -4,7 +4,7 @@
 
 适用于 `crates/z-ai/` 的公开数据类型、可选 serde、账号凭据与内存存储。
 本库对齐 `pi-ai` 的核心数据语义，不实现网络、OAuth 流程、存储 IO、上游 JSON 兼容或 provider 执行逻辑。
-上游来源、许可证及数据边界见 `crates/z-ai/README.md` 的「许可证」「数据覆盖与安全边界」；详细 T/E/X 映射见 `.trellis/tasks/09-13-pi-ai-multi-account/research/core-scope.md`；领域术语见根 `CONTEXT.md`。
+上游来源、许可证及数据边界见 `crates/z-ai/README.md` 的「许可证」「数据覆盖与安全边界」；详细 T/E/X 映射见 `.trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/core-scope.md`；领域术语见根 `CONTEXT.md`。
 README 保留本项目 MIT 许可声明、上游来源/固定 commit、非官方说明及数据边界；用户已要求删除额外附加的上游 MIT 全文，不因旧验收记录自动恢复全文附录，也不另建替代说明文件。这是文档精简，不改变根 LICENSE、Cargo 许可声明或功能/协议边界；后续若引入受上游许可约束的代码，仍须保留适用的版权与许可声明。
 
 ## 2. Signatures

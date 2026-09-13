@@ -7,6 +7,6 @@
 {"file":".trellis/spec/workspace/rust/documentation.md","reason":"公开中文文档与doctest"}
 {"file":".trellis/spec/workspace/rust/dependencies-and-changelog.md","reason":"feature/依赖/MSRV/许可证与CHANGELOG"}
 {"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"身份、凭据配置、序列化与事件所有权的边界一致性"}
-{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/core-scope.md","reason":"逐字段语义覆盖与明确不实现的行为"}
-{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/upstream-auth.md","reason":"多账号、特殊OAuth字段与秘密载体"}
-{"file":".trellis/tasks/09-13-pi-ai-multi-account/research/planning-review.md","reason":"CAS不等于刷新事务、ABA生命周期与各层脱敏"}
+{"file":".trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/core-scope.md","reason":"逐字段语义覆盖与明确不实现的行为"}
+{"file":".trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/upstream-auth.md","reason":"多账号、特殊OAuth字段与秘密载体"}
+{"file":".trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/research/planning-review.md","reason":"CAS不等于刷新事务、ABA生命周期与各层脱敏"}

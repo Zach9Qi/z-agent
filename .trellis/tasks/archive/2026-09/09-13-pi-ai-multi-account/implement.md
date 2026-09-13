@@ -117,8 +117,8 @@ cargo tree -p z-ai -e normal
 - [x] 按trellis-update-spec完成稳定契约同步：新增`z-ai-core-contracts.md`并更新相关索引，具体记录见validation.md。
 - [x] 最终git diff检查通过，未提交凭据、未改源JS项目；完整验收与真实门禁证据已记录。
 - [x] 实施未发生重大范围变化；今后如需重大范围或公开契约调整，仍须先同步prd/design/implement并重新获得最终评审批准。
-- [ ] 用户已明确要求将当前变更提交到Git，按已展示的Phase 3.4范围执行功能提交；不推送，提交结果在收尾时记录。
-- [ ] 提交完成后按Trellis流程归档任务；完整AC已达到，但不提前执行archive。
-- [ ] 提交及归档后记录会话日志；当前保持待办。
+- [x] 用户明确授权后完成工作提交 `0bf5190a500672075457352d7ec9eff3bcf5e49d`：`feat(ai): 新增核心数据模型与显式多账号支持`；未推送。
+- [x] 完整AC通过后执行Trellis归档，状态为completed；归档目录为`.trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/`，同步修复清单及spec引用。
+- 会话日志遵循本仓库配置，仅由`add_session.py --no-commit`写入被忽略的`.trellis/workspace/ZachQ/`，不强制纳入Git；日志以本地记录为准。
 
 回滚范围：本次新crate、根依赖/锁文件、CHANGELOG、包文档；不撤销无关文件或用户改动。无数据库/认证文件迁移，无部署回滚。

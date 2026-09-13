@@ -1,6 +1,14 @@
 # z-ai 实施与验证记录
 
-## 交付状态
+## 提交与归档结果
+
+- 用户明确要求提交当前变更，工作提交为`0bf5190a500672075457352d7ec9eff3bcf5e49d`：`feat(ai): 新增核心数据模型与显式多账号支持`。
+- 提交前再次执行`cargo xtask ci`通过，typos因本机未安装跳过；`git diff --check`与任务上下文清单验证通过。
+- 任务已归档至`.trellis/tasks/archive/2026-09/09-13-pi-ai-multi-account/`，task.json状态completed，记录工作commit；同步修复归档后研究清单和spec引用。
+- 未push、未真正publish；会话journal按`.trellis/config.yaml`与`.gitignore`仅保存在本地，不强制跟踪。
+- 下方为实施各阶段的历史记录，其中尚待提交/待授权等表述描述当时状态，以本节及归档task.json为最终状态。
+
+## 历史：交付状态（提交前）
 
 - 用户在最终规划摘要后回复「ok」，任务已从planning启动为in_progress。
 - 工作分支：`feat/z-ai-core`；源JS基线仍为`1148f7958c260188b03488496044dcfa852ef580`，未修改源项目或读取真实凭据。
